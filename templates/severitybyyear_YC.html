@@ -1,0 +1,208 @@
+<html>
+    <!DOCTYPE html>
+    <meta charset="utf-8">
+    <head>
+        <!-- add title -->
+        <!-- import required libraries here -->
+        <script src="../static/js/d3.v5.min.js"></script>
+        <script src="../static/js/d3-dsv.min.js"></script>
+        <script src="../static/js/d3-geo-projection.v2.min.js"></script>
+        <script src="../static/js/d3-legend.min.js"></script>
+        <script src="../static/js/d3-tip.min.js"></script>
+        <script src="../static/js/topojson.v2.min.js"></script>
+        
+        <style>
+            .counties {
+                fill:none;
+                stroke: #ffffd9;
+                stroke-linejoin: round;
+            }
+            .states {
+                fill: #69b3a2;
+                stroke: #fff;
+                stroke-linejoin: round;
+            }
+            #dropdown {
+                position: absolute; 
+                margin-left: 50px; 
+                margin-top: 6px;
+            }
+            .legendThreshold {
+                font-size: 12px;
+                font-family: sans-serif;
+            }
+            .d3-tipbox {
+                background: "grey";
+                color: "white";
+            }
+
+            h1 {
+                text-align: center;
+            }
+        
+        </style>
+    </head>
+
+    <body>
+        <div id="first" class="container" align="center">
+            <!-- Add heading for the visualization -->
+            <h1 style="text-align:center">U.S. Accidents by Year</h1>
+            
+            <!-- Dropdown -->
+            <select id="dropdown"></select>
+            
+            <!-- append visualization svg to this div-->
+            <div id="choropleth"></div>
+
+            <script>
+            
+                // enter code to define margin and dimensions for svg
+                var width = 960 * 1.5;
+                var height = 500 * 1.5; 
+                
+                // enter code to create color scale for feature
+                var colorScheme1 = d3.schemeReds[4];
+                var color1 = d3.scaleQuantile().range(colorScheme1)
+
+                // enter code to create color scale for map
+                var colorScheme2 = d3.schemeBlues[4];
+                var color2 = d3.scaleQuantile().range(colorScheme2)
+                
+                // enter code to define tooltip
+                var tip = d3.tip().attr('class', 'd3-tip').offset([10,10]);
+                
+                // enter code to define projection and path required for Choropleth
+                var projection = d3.geoAlbersUsa()
+                    .translate([width / 2, height / 2])
+                    .scale(1000 * 1.5);
+                    //.scale(width / 2 / Math.PI);
+                var path = d3.geoPath().projection(projection);
+
+                // define any other global variables 
+                var readData = [];
+
+                // promise json and csv
+                // counties json file https://github.com/topojson/us-atlas
+                var promises = [
+                    d3.json("../static/data/states-10m.json"),
+                    d3.dsv(",", "../static/data/dataset_viz.csv", function(d) { readData.push({
+                        Severity: +d.Severity,
+                        Start_Lat: +d.Start_Lat,
+                        Start_Lng: +d.Start_Lng,
+                        City: d.City,
+                        County: d.County,
+                        Year: d.Year
+                        }); 
+                    })
+                ]
+                Promise.all(promises).then(ready)
+            
+                function ready([us]) {
+
+                    //console.log(us);
+                    //console.log(readData);
+
+                    // dropdown options
+                    var featuresML = ["2016", "2017", "2018", "2019", "2020"];
+                    var dropdown_options = [];
+                    for (var i = 0; i < featuresML.length; i++) {
+                        dropdown_options.push({value: featuresML[i], text: featuresML[i]})
+                    }
+                    d3.select("#dropdown")
+                    .selectAll("option")
+                    .data(dropdown_options)
+                    .enter()
+                    .append("option")
+                    .attr("value", function(d) { return d.value; })
+                    .text(function(d) { return d.text; });
+
+                    // default feature
+                    var selectedY = "2016"
+                    createMapAndLegend(us, readData, selectedY);
+                    
+                    // event listener for the dropdown. Update choropleth and legend 
+                    var dropDown = d3.select("#dropdown");
+                    dropDown.on("change", function() {
+                        selectedY = d3.event.target.value;
+                        //console.log(selectedF);
+                        createMapAndLegend(us, readData, selectedY);
+                    });
+                    
+                }
+
+                function createMapAndLegend(us, readData, selectedY){
+                    d3.selectAll("svg").remove();
+
+                    // enter code to create svg
+                    var svg = d3.select("#first").append("svg")
+                                .attr("width", width )
+                                .attr("height", height)
+
+                    // dropdown text
+                    svg.append("text").attr("x", 730).attr("y", 20).attr("font-weight", "bold").text("Year:") ;
+
+                    // filter data
+                    var filterData = readData.filter(function(d) {return d.Year == selectedY})
+
+                    // choropleth map for US
+                    svg.append("g")
+                    .attr("class", "states")
+                    .selectAll("path")
+                    .data(topojson.feature(us, us.objects.states).features)
+                    .enter().append("path")
+                    .attr("d", path)
+
+                    svg.append("path")
+                    .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a !== b; }))
+                    .attr("class", "states")
+                    .attr("d", path);
+                    
+                    // color range setting
+                    color1.domain([1, 4])
+
+                    // add circles to svg
+                    // https://stackoverflow.com/questions/55406856/how-to-plot-lat-long-pairs-over-map-in-d3-js
+                    //var rScale = d3.scaleLinear().domain([d3.min(featureColor), d3.max(featureColor)]).range([1, 6])
+                    for (var i = 0; i < filterData.length; i++) {
+                        svg.append("circle")
+                        .attr("cx", projection([filterData[i].Start_Lng, filterData[i].Start_Lat])[0])
+                        .attr("cy", projection([filterData[i].Start_Lng, filterData[i].Start_Lat])[1])
+                        .attr("fill", color1(filterData[i]["Severity"]))
+                        .attr("r", filterData[i]["Severity"] * 1.5)
+                        //.attr("r", rScale(readData[i]["Severity"]))
+                    }
+                    
+                    // add legend w 4 color gradations
+                    var lPadding = 110;  // padding for legend
+                    var formatDecimal = d3.format(",.2f");
+                    var g = svg.append("g")
+                            .attr("class", "legendThreshold")
+                            .attr("transform", "translate(" + (width-lPadding) + "," + 20 + ")");
+                        g.append("text")
+                        .attr("class", "caption")
+                        .attr("x", 0)
+                        .attr("y", -10)
+                        .attr("font-weight", "bold")
+                        .text("Severity Level");
+                    var labels = ["1", "2", "3", "4"];
+                    var legend = d3.legendColor()
+                                .labels(function (d) { return labels[d.i]; })
+                                .shapePadding(4)
+                                .scale(color1);
+                    svg.select(".legendThreshold")
+                    .call(legend);
+                    
+                    // Remove old ones
+                    svg.exit().remove();
+                }
+                
+            </script>
+        </div>
+
+
+        <div class="container" align="center">
+            <a href="explore.html" align=right>Back to Explore & Visualize</a>
+        </div>
+
+    </body>
+</html>

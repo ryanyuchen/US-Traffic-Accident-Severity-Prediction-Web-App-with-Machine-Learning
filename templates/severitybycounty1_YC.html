@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+	<!-- add title -->
+    <!-- import required libraries here -->
+    <!-- <script src="../lib/d3.v5.min.js"></script> -->
+    <!-- <script src="http://d3js.org/d3.v5.min.js" charset="utf-8"></script>
+    <script src= "https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.js"></script> -->
+    
+    <script src="../static/js/d3.v5.min.js"></script>
+    <script src="../static/js/d3-dsv.min.js"></script>
+    <script src="../static/js/d3-geo-projection.v2.min.js"></script>
+    <script src="../static/js/d3-legend.min.js"></script>
+    <script src="../static/js/d3-tip.min.js"></script>
+    <script src="../static/js/topojson.v2.min.js"></script>
+	
+	<style>
+		.counties {
+            fill:none;
+            stroke: #0c0c0c3f;
+            stroke-linejoin: round;
+        }
+        .states {
+            fill: none;
+            stroke: #000000;
+            stroke-linejoin: round;
+        }
+        #dropdown {
+            position: absolute; 
+            margin-left: 110px; 
+            margin-top: 7px;
+        }
+        .legendThreshold {
+            font-size: 12px;
+            font-family: sans-serif;
+        }
+        .d3-tipbox {
+            background: "grey";
+            color: "white";
+        }
+
+        h1 {
+            text-align: center;
+        }
+	</style>
+</head>
+
+<body>
+
+    <div id="first" class="container" align="center"> 
+        <!-- Add heading for the visualization -->
+        <h1 style="text-align:center">U.S. Accidents Count by Severity Level and County</h1>
+
+        
+        <!-- Dropdown -->
+        <select id="dropdown"></select>
+        
+        <!-- append visualization svg to this div-->
+        <div id="choropleth"></div>
+
+        <script>
+        
+            // enter code to define margin and dimensions for svg
+            var width = 960 * 1.5;
+            var height = 500 * 1.5; 
+            
+            // enter code to create color scale for feature
+            var colorScheme1 = d3.schemeReds[4];
+            var color1 = d3.scaleQuantile().range(colorScheme1)
+
+            // enter code to create color scale for map
+            var colorScheme2 = d3.schemeBlues[9];
+            var color2 = d3.scaleQuantile().range(colorScheme2)
+            
+            // enter code to define tooltip
+            var tip = d3.tip().attr('class', 'd3-tip').offset([10,10]);
+            
+            // enter code to define projection and path required for Choropleth
+            var projection = d3.geoAlbersUsa()
+                .translate([width / 2, height / 2])
+                .scale(1000 * 1.5);
+                //.scale(width / 2 / Math.PI);
+            var path = d3.geoPath().projection(projection);
+
+            // define any other global variables 
+            var readData = [];
+
+            // promise json and csv
+            // counties json file https://github.com/topojson/us-atlas
+            var promises = [
+                d3.json("../static/data/counties-10m.json"),
+                d3.dsv(",", "../static/data/dataset_viz.csv", function(d) { readData.push({
+                    Severity: +d.Severity,
+                    Start_Lat: +d.Start_Lat,
+                    Start_Lng: +d.Start_Lng,
+                    City: d.City,
+                    County: d.County,
+                    Year: d.Year
+                    }); 
+                })
+            ]
+            Promise.all(promises).then(ready)
+        
+            function ready([us]) {
+
+                //console.log(us);
+                //console.log(readData);
+
+                // dropdown options
+                var featuresML = ["1", "2", "3", "4"];
+                var dropdown_options = [{value: 1, text: "1"},
+                                        {value: 2, text: "2"},
+                                        {value: 3, text: "3"},
+                                        {value: 4, text: "4"}];
+
+                d3.select("#dropdown")
+                .selectAll("option")
+                .data(dropdown_options)
+                .enter()
+                .append("option")
+                .attr("value", function(d) { return d.value; })
+                .text(function(d) { return d.text; });
+
+                // default feature
+                var selectedSL = 1
+                createMapAndLegend(us, readData, selectedSL);
+                
+                // event listener for the dropdown. Update choropleth and legend 
+                var dropDown = d3.select("#dropdown");
+                dropDown.on("change", function() {
+                    selectedSL = d3.event.target.value;
+                    createMapAndLegend(us, readData, selectedSL);
+                });
+                
+            }
+
+            function createMapAndLegend(us, readData, selectedSL){
+                d3.selectAll("svg").remove();
+
+                // enter code to create svg
+                var svg = d3.select("#first").append("svg")
+                            .attr("width", width )
+                            .attr("height", height)
+                
+                // dropdown text
+                svg.append("text").attr("x", 720).attr("y", 22).attr("font-weight", "bold").text("Severity Level:") ;
+
+                // filter data
+                var filterData = readData.filter(function(d) {return d.Severity == selectedSL})
+                //console.log(filterData)
+                
+                // group gamesData by game
+                var countyData = d3.nest()
+                                .key(function(d) {return d.County;})
+                                .rollup(function(v) { return v.length; })
+                                .entries(filterData);
+                //console.log(countyData[0].value);
+
+                // color range setting
+                var featureColor = [];
+                for (var i = 0; i < countyData.length; i++) {
+                    featureColor.push(countyData[i].value);
+                }
+                color2.domain([Math.log(d3.min(featureColor)), Math.log(d3.max(featureColor))]);
+
+                // display color by county name
+                var displayColor = {};
+                for (var i = 0; i < countyData.length; i++) {
+                    displayColor[countyData[i].key] = countyData[i].value;
+                }
+
+                // setup tooltip
+                var countyName = Object.keys(displayColor);
+                //console.log(countyName)
+                tip.html(function(d) {
+                    d3.select(".d3-tip").style("background-color", "grey").style("color", "white");
+                    if (countyName.includes(d.properties.name)) {
+                        return "County: " + d.properties.name
+                                + "<br/> Severity Level: " + selectedSL
+                                + "<br/> Accident Count: " + displayColor[d.properties.name] 
+                    }
+                    else {
+                        return "County: " + d.properties.name
+                                + "<br/> Severity Level: " + selectedSL
+                                + "<br/> Accident Count: " + 0 
+                    }
+                })
+
+                // choropleth map for US
+                svg.append("g")
+                .attr("class", "counties")
+                .selectAll("path")
+                .data(topojson.feature(us, us.objects.counties).features)
+                .enter().append("path")
+                .attr("fill", function(d) { return color2(Math.log(displayColor[d.properties.name])); })
+                .attr("d", path)
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide)
+                .call(tip);
+
+                svg.append("path")
+                .datum(topojson.feature(us, us.objects.states, function(a, b) { return a !== b; }))
+                .attr("class", "states")
+                .attr("d", path);
+                
+                // add legend w 9 color gradations
+                var lPadding = 180;  // padding for legend
+                //var formatDecimal = d3.format(",.1f");
+                var g = svg.append("g")
+                        .attr("class", "legendThreshold")
+                        .attr("transform", "translate(" + (width-lPadding) + "," + (height - 190) + ")");
+                    g.append("text")
+                    .attr("class", "caption")
+                    .attr("x", 0)
+                    .attr("y", -10)
+                    .attr("font-weight", "bold")
+                    .text("Accident Count");
+                var step = (d3.max(featureColor) - d3.min(featureColor))/9;
+                var labels = [
+                (d3.min(featureColor)).toString() + " to " + Math.floor(d3.min(featureColor) + step).toString(),
+                Math.floor(d3.min(featureColor) + step).toString() + " to " + Math.floor(d3.min(featureColor) + step * 2).toString(),
+                Math.floor(d3.min(featureColor) + step * 2).toString() + " to " + Math.floor(d3.min(featureColor) + step * 3).toString(),
+                Math.floor(d3.min(featureColor) + step * 3).toString() + " to " + Math.floor(d3.min(featureColor) + step * 4).toString(),
+                Math.floor(d3.min(featureColor) + step * 4).toString() + " to " + Math.floor(d3.min(featureColor) + step * 5).toString(),
+                Math.floor(d3.min(featureColor) + step * 5).toString() + " to " + Math.floor(d3.min(featureColor) + step * 6).toString(),
+                Math.floor(d3.min(featureColor) + step * 6).toString() + " to " + Math.floor(d3.min(featureColor) + step * 7).toString(),
+                Math.floor(d3.min(featureColor) + step * 7).toString() + " to " + Math.floor(d3.min(featureColor) + step * 8).toString(),
+                Math.floor(d3.min(featureColor) + step * 8).toString() + " to " + Math.floor(d3.max(featureColor)).toString()
+                ];
+                var legend = d3.legendColor()
+                            .labels(function (d) { return labels[d.i]; })
+                            .shapePadding(4)
+                            .scale(color2);
+                svg.select(".legendThreshold")
+                .call(legend);
+            }
+            
+        </script>
+
+    </div>
+
+    <div class="container" align="center">
+        <a href="explore.html" align=right>Back to Explore & Visualize</a>
+    </div>
+
+
+</body>
+</html>

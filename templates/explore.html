@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang = "en">
+
+	<head>
+
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>US Car Accidents - Severity Prediction</title>
+		<link href="../static/css/styles.css" rel="stylesheet">
+		<!-- add title -->
+		<!-- import required libraries here -->
+
+		<style>
+
+			div.item {
+				vertical-align: top;
+				display: inline-block;
+				text-align: center;
+				width: 550px;
+			}
+			img {
+				width: 550px;
+				height: 350px;
+				background-color: grey;
+			}
+			.caption {
+				display: block;
+			}
+			div.item2 {
+				vertical-align: top;
+				display: inline-block;
+				text-align: center;
+				width: 300px;
+			}
+
+			h1 {
+            	text-align: left;
+        	}
+
+		</style>
+	</head>
+
+	<body>
+
+		<nav>
+            <div class="navbar justify-content-center">
+                <ul class="nav navbar-nav navbar-center">
+					<a  href="index.html">
+						Severity Prediction
+					</a>
+					<a class="current-page" href="#">
+						Explore & Visualize
+					</a>
+					<a href="dataset.html">
+						About Dataset
+					</a>
+					<a id="about" href="about.html">
+						Team Introduction
+					</a>
+                </ul>
+			</div>
+
+		</nav>
+
+
+
+		<div class ="container" align="center">
+			<h1 style="text-align:left">Choropleth Maps (clickable): </h1>
+			<div class="item" style="margin: 15px">
+				<a href="severitybycounty1_YC.html" title="click to access to dynamic choropleth map with different severity levels">
+					<img style="width:100%;" src="../static/img/US_accidents_by_county.png" 
+						alt="US Country Wide Car Accident Severity">
+				</a>
+					
+				<h2>
+					<a href="severitybycounty1_YC.html">U.S. Accidents Count by Severity Level and County</a>	
+				</h2>
+			</div>
+
+			<div class="item" style="margin: 15px">
+				<a href="severitybyyear_YC.html" title="click to access to dynamic choropleth map of accident count by severity levels and years">
+					<img style="width:100%;" src="../static/img/US_accidents_by_year.png" 
+						alt="US Country Wide Car Accident Severity">
+				</a>
+					
+				<h2>
+					<a href="severitybyyear_YC.html">U.S. Accidents Count by Severity Level and Year</a>	
+				</h2>
+			</div>
+
+			<h1>Visualization of Different Features:</h1>
+			<div class="item" style="margin: 15px">			
+				<h2>
+					<a href="featureviz_YC.html">U.S. Accidents Dataset Feature Visualization</a>	
+				</h2>
+			</div>
+
+			<h1>Data Statistics: </h1>
+			<div class="item" style="margin: 15px">
+				<img style="width:90%; height:85%" src="../static/img/state_cases.png" 
+						alt="Count of Accidents by States">
+					
+				<h2>Count of Accidents by States</h2>
+			</div>
+
+			<div class="item" style="margin: 15px">
+				</br>
+				</br>
+				<img style="width:88%; height:80%" src="../static/img/top10_weather.png" 
+						alt="Top 10 Weather Condition for accidents">
+					
+				<h2>Top 10 Weather Condition for accidents</h2>
+			</div>
+
+			<div class="item" style="margin: 15px">
+				</br>
+				<img style="width:80%; height:85%" src="../static/img/yearly_cases.png" 
+						alt="Count of Accidents by Years">
+					
+				<h2>Count of Accidents by Years</h2>
+			</div>
+
+			<div class="item" style="margin: 15px">
+			</br>
+				<img style="width:86%; height:80%" src="../static/img/monthly_cases.png" 
+						alt="Count of Accidents by Months">
+					
+				<h2>Count of Accidents by Months</h2>
+			</div>
+
+			<div class="item" style="margin: 15px">
+			</br>
+				<img style="width:80%; height:85%" src="../static/img/weekday_cases.png" 
+						alt="Count of Accidents by Weekdays">
+					
+				<h2>Count of Accidents by Weekdays </br> (0 is Monday, 6 is Sunday)</h2>
+			</div>
+
+			<div class="item" style="margin: 15px">
+			</br>
+				<img style="width:86%; height:80%" src="../static/img/time_cases.png" 
+						alt="Count of Accidents by Hours">
+					
+				<h2>Count of Accidents by Hours </h2>
+			</div>
+		
+		</div>
+	
+
+		<div class="footer">
+        	<p>Copyright © 2020 All right reserved</p>
+    	</div>
+
+	</body>
+
+
+</html>

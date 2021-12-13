@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang = "en">
+    <head>
+        <meta charset = "ISO-8859-1">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Car Accident Severity Prediction</title>
+        <link href="../static/css/styles.css" rel="stylesheet">
+        <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script src= "https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.7.1/d3-tip.js"></script>
+
+        <link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Arimo' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Hind:300' rel='stylesheet' type='text/css'>
+        <link href='https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300' rel='stylesheet' type='text/css'>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    </head>
+
+    <body>
+
+        <nav>
+            <div class="navbar justify-content-center">
+                <ul class="nav navbar-nav navbar-center">
+
+                    <a class="current-page" href="#">
+                        Severity Prediction
+                    </a>
+                    
+                    <a href="explore.html">
+                        Explore & Visualize
+                    </a>
+
+                    <a href="dataset.html">
+                        About Dataset
+                    </a>
+                    <a id="about" href="about.html">
+                        Team Introduction
+                    </a>
+                </ul>
+            </div>
+
+        </nav>
+
+
+		<div class ="container" align="left">
+			<p class = "header" align=left><h1> About the models: </h1></p>
+			<p class = "text" align="left">
+                In the model development process we did a series of data processing and cleaning for the 
+                <a href="https://www.kaggle.com/sobhanmoosavi/us-accidents?select=US_Accidents_June20.csv" target="_blank">raw dataset</a>, like 
+                removing features not suitable for use, handling missing data, transformation and simplification. In the feature engineering part 
+                we did resampling and feature encoding. </br>
+                After that a bunch of classifiers were applied, tested and evaluated onto the processed data, like 
+                logistic regression, decision tree, random forest, XGBoost, SVM. Based the classification evaluation metrics we used in the project here we are
+                providing you two classifiers, Random Forest and XGBoost, by which you can conduction prediction on your own data. </br>
+                Now both of the models have > 90% accuracy and F1 score on the testing dataset. As you see below the models are using 8 features for car accident severity prediction. 
+            </p>
+            
+            <p class = "header" align=left><h2> Description of prediction input features:  </h2></p>
+			<p class = "text" align=left>
+                <li style="font-size:16px;">Distance(mile): The length of the road extent affected by the accident</li>
+                <li style="font-size:16px;">Duration(min): How long the accident last for in minutes</li>
+                <li style="font-size:16px;">City: city name</li>
+                <li style="font-size:16px;">Street: street name</li>
+                <li style="font-size:16px;">Longitude of the start point: longitude in GPS coordinate of the accident start point</li>
+                <li style="font-size:16px;">Latitude of the start point: latitude in GPS coordinate of the accident start point</li>
+                <li style="font-size:16px;">Air Pressure(inches): the air pressure in inches</li>
+                <li style="font-size:16px;">Temperature(F): the temperature in Fahrenheit</li>
+                <li style="font-size:16px;">Humidity(%): the humidity in percentage</li>
+                <li style="font-size:16px;">Wind Speed(mph): wind speed in miles per hour</li>
+            </p>
+            <p style="color:rgb(255, 119, 0);font-size:20px;"> 
+                You can use <a href="https://www.latlong.net/convert-address-to-lat-long.html" target="_blank">this</a> 
+                link to get latitude and longitude from your address. 
+            </p>
+        </div>
+        
+        <div class ="sub_all container" align="left">
+           
+            <div class="sub_left">
+                <!-- <form id = "Dropdown-Form" action='/model_picker' method="GET"> -->
+                <!-- <form role="form" name="model_selection" id = "Dropdown-Form" method="POST" action="{{ url_for('predict') }}">  -->
+
+                <!-- </form> -->
+
+
+                <form action="{{ url_for('predict')}}" method="POST">
+
+                    <div class="form-group">
+                        <div class="input-group">
+                            <p class="sub_title">Conduct prediction on your own data</p>
+
+                            <div style="margin-bottom: 5px;">
+                                <p class="sub_instruction"><span style="margin-right: 5px;">Step1:</span>
+                                    <span>Select a Machine Learning Algorithm you want to use</span>
+                                </p>
+                                
+                                </br> 
+                                <!-- <select name="model_selection" id="" class="selectpicker form-control">
+                                    {% for algorithm in ml_algorithms %}
+                                        <option value = "{{ algorithm }}">{{ algorithm }}</option>
+                                    {% endfor %} 
+                                </select> -->
+                                <select class="form-control" id="model_selection" name="model_selection">
+                                    <option value="random_forest" selected>Random Forest</option>
+                                    <option value="xgboost">XGBoost</option>
+                                </select>
+                                <br>
+                                <br>
+                                <p class="sub_instruction"><span style="margin-right: 5px;">Step2:</span>
+                                    <span>Enter your data for the following features: </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="text" name="distance" placeholder="Distance(mile)" size="22" required="required" />
+                    <input type="text" name="duration" placeholder="Duration(min)" size="22" required="required" />
+                    </br> </br> 
+                    <input type="text" name="city" placeholder="City" size="22" required="required" />
+                    <input type="text" name="street" placeholder="Street" size="22" required="required" />
+                    </br> </br>
+                    <input type="text" name="start_lng" placeholder="Longitude of the start point" size="22" required="required" />
+                    <input type="text" name="start_lat" placeholder="Latitude of the start point" size="22" required="required" />
+                    </br> </br>
+                    <input type="text" name="pressure" placeholder="Air Pressure(inches)" size="22" required="required" />
+                    <input type="text" name="temperature" placeholder="Temperature(F)" size="22" required="required" />
+                    </br> </br>
+                    <input type="text" name="humidity" placeholder="Humidity(%)" size="22" required="required" />
+                    <input type="text" name="windspeed" placeholder="Wind Speed(mph)" size="22" required="required" />
+                    <button type="submit" id="result" class="analyze_button">Predict accident severity</button>
+                </form>
+
+                <!-- <button type="submit" id = "result" class = "btn btn-primary btn-block btn-large">Predict</button>                        -->
+                
+                <h1></h1>
+            </div>
+
+            <div id="Vis" class="sub_right">
+                <p class="sub_title">Prediction Results</p>
+                <div class = "default_instruction"> 
+                    <div style="padding-right: 50px;">
+
+                        <img style = "height: 120px;" src="../static/img/supervised-machine-learning-illustration.png">
+                        <img style = "height: 130px;" src="../static/img/Scatter-Plot-of-Binary-Classification-Dataset.png">
+                    </div>
+                    <p class="sub_description">
+                        When you have chosen the model and entered your own data correctly and clicked the “Predict” button. 
+                        The prediction result would be returned here.
+                    </p>
+                    
+                    <p><h3>{{ picked_model }}</h3></p>
+
+                    <p><h3>{{ input_values }}</h3></p>
+
+                    <p ><h1 style="color:blue;">{{ prediction_text }}</h1></p>
+
+                </div>
+            </div>
+
+		</div>
+
+
+        <div class="footer">
+            <p>Copyright © 2020 All right reserved</p>
+        </div>
+
+
+        <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />
+        <script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>
+
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.min.js"></script>
+        <!-- Websocket library -->
+
+
+        <script src="../static/js/map.js"></script>
+        <script src="../static/js/geoplot.js"></script>
+    </body>
+
+
+</html>

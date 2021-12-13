@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+	<!-- add title -->
+    <!-- import required libraries here -->
+    <!-- <script src="../lib/d3.v5.min.js"></script>
+    <script src="../lib/d3-dsv.min.js"></script>
+    <script src="../lib/d3-geo-projection.v2.min.js"></script>
+    <script src="../lib/d3-legend.min.js"></script>
+    <script src="../lib/d3-tip.min.js"></script>
+    <script src="../lib/topojson.v2.min.js"></script> -->
+
+    <script src="../static/js/d3.v5.min.js"></script>
+    <script src="../static/js/d3-dsv.min.js"></script>
+    <script src="../static/js/d3-geo-projection.v2.min.js"></script>
+    <script src="../static/js/d3-legend.min.js"></script>
+    <script src="../static/js/d3-tip.min.js"></script>
+    <script src="../static/js/topojson.v2.min.js"></script>
+	
+	<style>
+        #dropdown {
+            position: absolute; 
+            margin-left: 70px; 
+            margin-top: 8px;
+        }
+        .d3-tipbox {
+            line-height: 1;
+            font-weight: bold;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 2px;
+        }
+        .d3-tip:after {
+            box-sizing: border-box;
+            display: inline;
+            font-size: 10px;
+            width: 100%;
+            line-height: 1;
+            color: rgba(0, 0, 0, 0.8);
+            content: "\25BC";
+            position: absolute;
+            text-align: center;
+        }
+        .d3-tip.n:after {
+            margin: -1px 0 0 0;
+            top: 100%;
+            left: 0;
+        }
+        .bar {
+            fill: rgb(0, 60, 255);
+        }
+
+        .bar:hover {
+            fill: orangered ;
+        }
+	</style>
+</head>
+
+<body>
+
+    <div id="first" class="container" align="center"> 
+        <!-- Add heading for the visualization -->
+        <h1>U.S. Accidents Dataset Feature Visualization</h1>
+        
+        <!-- Dropdown -->
+        <select id="dropdown"></select>
+
+        <script>
+        
+            // enter code to define margin and dimensions for svg
+            var width = 960;
+            var height = 600; 
+            var margin = {top: 80, right: 80, bottom: 80, left: 80};
+
+            // format
+            var formatPercent = d3.format(".0%");
+            var formatPercentTip = d3.format(".2%");
+
+            // enter code to define tooltip
+            var tip = d3.tip()
+                        .attr('class', 'd3-tip')
+                        .offset([-10, 0])
+                        .html(function(d) {
+                            return "<strong>" + formatPercentTip(d.value) + "</strong>";
+                        })
+
+            // create scales x & y for X and Y axis and set their ranges
+            var x = d3.scaleBand().range([margin.left, width - margin.right]);
+            var y = d3.scaleLinear().range([height - margin.top, margin.bottom]);
+
+            // read in data
+            d3.dsv(",", "../static/data/dataset_featureviz.csv", function(d) {
+                return {
+                    Severity : d.Severity,
+                    City : d.City,
+                    State : d.State,
+                    County : d.County,
+                    Weather_Condition : d.Weather_Condition,
+                    Temperature : Math.floor(+d["Temperature(F)"]),
+                    Humidity : Math.floor(+d["Humidity(%)"]),
+                    Pressure : Math.floor(+d["Pressure(in)"]),
+                    Visibility : Math.floor(+d["Visibility(mi)"]),
+                    Wind_Speed : Math.floor(+d["Wind_Speed(mph)"]),
+                    Duration : Math.floor(+d.Duration),
+                    Distance : Math.floor(d["Distance(mi)"]),
+                    Side : d.Side,
+                    Crossing : d.Crossing,
+                    Traffic_Signal : d.Traffic_Signal,
+                    Sunrise_Sunset : d.Sunrise_Sunset,
+                    Year : d.Year,
+                    Month : d.Month,
+                    Hour : d.Hour,
+                    Weekday : d.Weekday
+                }
+            }).then(function(data) {
+                //console.log(data)
+
+                // extract all unique features
+                var features = d3.keys(data[0]);
+
+                // dropdown options
+                var dropdown_options = [];
+                for (var i = 0; i < features.length; i++) {
+                    dropdown_options.push({value: features[i], text: features[i]})
+                }
+
+                d3.select("#dropdown")
+                .selectAll("option")
+                .data(dropdown_options)
+                .enter()
+                .append("option")
+                .attr("value", function(d) { return d.value; })
+                .text(function(d) { return d.text; });
+
+                // default feature and year
+                var selectedFeature = "Severity"
+                drawBar(data, selectedFeature)
+                
+                // event listener for the dropdown. Update choropleth and legend 
+                var dropDown = d3.select("#dropdown");
+                dropDown.on("change", function() {
+                    selectedFeature = d3.event.target.value;
+                    drawBar(data, selectedFeature);
+                });
+            })
+        
+            function drawBar(data, feature){
+                // remove old graph
+                d3.selectAll("svg").remove();
+
+                // enter code to create svg
+                var svg = d3.select("#first").append("svg")
+                            .attr("width", width )
+                            .attr("height", height);
+                
+                // dropdown text
+                svg.append("text").attr("x", 5).attr("y", 20).attr("font-weight", "bold").text("Feature:");
+
+                // nest data by feature
+                var dataByFeature = d3.nest()
+                                    .key(function(d) {return d[feature]})
+                                    .rollup(function(v) {return v.length})
+                                    .entries(data)
+                                    .sort(function(a, b){ return d3.descending(a.value, b.value) });
+
+                // total accident number
+                var accTotal = d3.sum(dataByFeature, function(d) {
+                    return d.value;
+                })
+                // create display data
+                var displayData = [];
+                if (dataByFeature.length > 24) {
+                    for (var i = 0; i < 10; i++) {
+                        displayData.push({key : dataByFeature[i].key, value : (dataByFeature[i].value / accTotal).toFixed(6)});
+                    }
+                    svg.append("text")
+                    .attr("x", width/ 2 )
+                    .attr("y", margin.top/2)
+                    .style("font-weight","bold")
+                    .style("text-anchor", "middle")
+                    .style("font-size", "25px")
+                    .text("Top 10 " + feature + " Accident Count Percentage");
+                }
+                else {
+                    for (var i = 0; i < dataByFeature.length; i++) {
+                        displayData.push({key : dataByFeature[i].key, value : (dataByFeature[i].value / accTotal).toFixed(6)});
+                    }
+                    svg.append("text")
+                    .attr("x", width/ 2 )
+                    .attr("y", margin.top/2)
+                    .style("font-weight","bold")
+                    .style("text-anchor", "middle")
+                    .style("font-size", "25px")
+                    .text(feature + " Accident Count Percentage");
+                }
+
+                // parameter
+                var barPadding = (width-margin.left-margin.right)/displayData.length/4;
+                var tickSpace = 10;
+
+                // set the domains of X and Y scales based on data
+                var xScale = x.domain(displayData.map(function(d) { return d.key; }));
+                var yScale = y.domain([0, d3.max(displayData, function(d) {return d.value;})]);
+                            
+                // Add bars to svg - create new elements based on your data
+                svg.selectAll(".bar").data(displayData).enter().append("rect").attr("class", "bar")
+                .attr("x", function(d) {return xScale(d.key)})
+                .attr("y", function(d) {return yScale(d.value)})
+                .attr("width", width / displayData.length - barPadding)
+                .attr("height", function(d) {return height - yScale(d.value) - margin.top})
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide)
+                .call(tip);
+
+                var xAxis = d3.axisBottom(xScale);
+                var yAxis = d3.axisLeft(yScale).ticks(tickSpace).tickFormat(formatPercent);
+                // Add the X Axis
+                svg.append("g").attr("class", "x_axis").attr("transform", "translate(0," + (height - margin.left) + ")").call(xAxis);
+                // Add the text label for X Axis
+                svg.append("text").attr("text-anchor", "middle").attr("x", width/2).attr("y", height-margin.bottom/2).text(feature);
+                // Add the Y Axis
+                svg.append("g").attr("class", "y_axis").attr("transform", "translate(" + margin.bottom + ",0)").call(yAxis);
+                // Add the text label for Y axis
+                svg.append("text").attr("text-anchor", "middle")
+                .attr("transform", "translate(" + (margin.left/2) + "," + (height/2) + ") rotate(-90)")
+                .text("Accident Count%");
+        
+            }
+            
+        </script>
+
+    </div>
+    
+    <div class="container" align="center">
+        <a href="explore.html" align=right>Back to Explore & Visualize</a>
+    </div>
+
+</body>
+</html>
