@@ -2,9 +2,6 @@
 
 Our course project is to help the users better analyse and visualize the US car accident dataset. The users can also predict the car severity based some features loaded from the web-app interface. 
 
-## Team members
-**Cong Wang, Fang Fu, Ruiqiang Chen, Xuebing Xiang, Yao Lu, and Yu Chen**
-
 ## Description
 
 - “Severity Prediction” tab includes a short description about the model used for prediction of the
